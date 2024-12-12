@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 
 const Users = require("./model/users.model.js");
 const Exercise = require("./model/exercise.model.js");
+const moment = require("moment");
 
 const mongoURI = process.env.MONGODB_URI;
 
@@ -28,6 +29,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(express.static("public"));
 app.get("/", (req, res) => {
+  console.log(new Date('1990-01-01').toDateString());
+  
   res.sendFile(__dirname + "/views/index.html");
 });
 
@@ -53,16 +56,16 @@ app.post("/api/users", async (req, res) => {
 app.post("/api/users/:_id/exercises", async (req, res) => {
   const userId = req.params._id;
   const description = req.body.description;
-  let duration = req.body.duration;
+  let duration = Number(req.body.duration);
 
   if (!typeof duration === "number") {
     duration = 0;
-  }
+  } 
 
-  let date = req.body.date;
-  if (!date || date === "") {
-    date = new Date();
-  }
+  const date = req.body.date ? moment(req.body.date).toDate().toDateString() : moment().toDate().toDateString();
+  // if (!date || date === "") {
+  //   date = new Date();
+  // }
 
   const username = await Users.findOne({ _id: userId });
 
@@ -80,12 +83,20 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
 
   await exercise.save();
   
-  res.json({
-    user_id: userId,
+  console.log({
     username: username.username,
     description: description,
     duration: duration,
-    date: new Date(date).toDateString,
+    date: date,
+    _id: userId,
+  });
+
+  res.json({
+    username: username.username,
+    description: description,
+    duration: duration,
+    date: date,
+    _id: userId,
   });
 });
 
@@ -120,7 +131,6 @@ app.get("/api/users/:_id/logs", async (req, res) => {
       };
     });
 
-    console.log(exercises);
     res.json({
       username: user.username,
       count: exercises.length,
